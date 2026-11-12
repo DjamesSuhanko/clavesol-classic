@@ -1,0 +1,10 @@
+{
+  "site_url": "https://classicos.clavesol.com.br",
+  "site_name": "Clave Sol",
+  "description": "Classicos para Clarinete Bb",
+  "default_image": "clarinet.jpg",
+  "default_image_alt": "Detalhe de um clarinete",
+  "social_profiles": [
+    "https://www.youtube.com/@ClaveSolMusic"
+  ]
+}

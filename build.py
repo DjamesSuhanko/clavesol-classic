@@ -1,0 +1,157 @@
+"""Gera site Clave Sol para acervos de músicas ou hinários."""
+from pathlib import Path
+import json
+import os
+import shutil
+import hashlib
+import re
+
+from score_catalog import load_catalog
+from music_pages import build_music
+from site_layout import page as layout
+from cache_assets import finish_build
+from seo import finish_seo
+from carousel import banner, images
+from composer_pages import build_composers
+
+ROOT = Path(__file__).resolve().parent
+config = json.loads((ROOT / 'hinario.json').read_text(encoding='utf-8'))
+BASE = os.environ.get('BASE_PATH', '').rstrip('/')
+OUT = ROOT / 'dist'
+
+
+def validar_catalogo_publico():
+    """Confere os JSONs gerados pelo Mose antes de reconstruir dist/.
+
+    Um acervo recém-criado ainda pode não ter catálogo. Nesse caso, o build
+    prossegue sem publicar esses arquivos. Um par incompleto ou com checksum
+    incorreto é erro, para não distribuir um catálogo inconsistente.
+    """
+    catalogo = ROOT / 'cardapio.json'
+    checksum = ROOT / 'cardapio.sha256'
+    existe_catalogo = catalogo.is_file()
+    existe_checksum = checksum.is_file()
+
+    if not existe_catalogo and not existe_checksum:
+        if os.environ.get('EXIGIR_CARDAPIO', '').strip().lower() in ('1', 'true', 'yes', 'sim'):
+            raise FileNotFoundError(
+                'EXIGIR_CARDAPIO ativo: cardapio.json e cardapio.sha256 ' 
+                'precisam existir na raiz do projeto.'
+            )
+        print('Aviso: sem cardapio.json/cardapio.sha256; site gerado sem catálogo Mose.')
+        return ()
+
+    if not (existe_catalogo and existe_checksum):
+        raise FileNotFoundError(
+            'Catálogo incompleto: cardapio.json e cardapio.sha256 ' 
+            'devem existir juntos na raiz do projeto.'
+        )
+
+    esperado = checksum.read_text(encoding='utf-8').strip().lower()
+    if not re.fullmatch(r'[0-9a-f]{64}', esperado):
+        raise ValueError('cardapio.sha256 deve conter somente um SHA-256 hexadecimal.')
+
+    obtido = hashlib.sha256(catalogo.read_bytes()).hexdigest()
+    if obtido != esperado:
+        raise ValueError(
+            'cardapio.sha256 não corresponde a cardapio.json. ' 
+            'Gere novamente ambos com o gerador do Mose.'
+        )
+
+    # O catálogo deve ser JSON válido, sem impor outro esquema ao site.
+    with catalogo.open(encoding='utf-8') as arquivo:
+        json.load(arquivo)
+    return (catalogo, checksum)
+
+
+ARQUIVOS_CATALOGO = validar_catalogo_publico()
+
+# The generic importer stores music in partituras/musicas/<grupo>/<titulo>.md.
+# Older repositories use partituras/hinos/<colecao>/<titulo>.md.
+collection = config['collection']
+category = 'musicas' if collection == 'musicas' else f'hinos/{collection}'
+route = 'partituras/' + category
+catalog = load_catalog(ROOT)
+
+if not catalog.scores:
+    raise ValueError('Nenhuma partitura válida encontrada no catálogo.')
+invalid = [s.key for s in catalog.scores if not (
+    s.key.startswith(category + '/') and
+    s.playback == 'generated' and s.timing
+)]
+if invalid:
+    raise ValueError('Coleção exige player e cursor validados; itens incompatíveis: ' + ', '.join(invalid[:10]))
+
+if OUT.exists():
+    shutil.rmtree(OUT)
+
+# Public assets only; do not publish MIDI, MSCZ, PDF, or other source material.
+managed = json.loads((ROOT / '.acervo-site.json').read_text(encoding='utf-8'))['managed']
+for name in managed:
+    relative = Path(name)
+    if not relative.parts or relative.parts[0] != 'assets' or relative.suffix.lower() in (
+        '.mid', '.midi', '.mscz', '.mscx', '.pdf'
+    ):
+        continue
+    source = ROOT / relative
+    if source.is_file():
+        target = OUT / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+
+(OUT / 'carrossel').mkdir(parents=True, exist_ok=True)
+for name in images(ROOT):
+    shutil.copyfile(ROOT / 'carrossel' / name, OUT / 'carrossel' / name)
+
+for score in catalog.scores:
+    score.downloads = [d for d in score.downloads if d[0] == 'score.musicxml']
+    sequence_path = OUT / 'assets' / score.assets / 'sequence.json'
+    sequence_path.parent.mkdir(parents=True, exist_ok=True)
+    sequence_path.write_text(json.dumps(score.sequence, separators=(',', ':')), encoding='utf-8')
+
+def page(title, body):
+    for external_route in ('partituras', 'partituras/hinos'):
+        body = body.replace(
+            f'href="{BASE}/{external_route}/"',
+            f'href="https://clavesol.com.br/{external_route}/"'
+        )
+    body = body.replace(f'href="{BASE}/{route}/"', f'href="{BASE}/"')
+    return layout(title, body, BASE)
+
+build_music(OUT, BASE, page, catalog)
+entry = OUT / route / 'index.html'
+if not entry.is_file():
+    raise ValueError(
+        f'Não foi gerada a página inicial {entry}. '
+        'Verifique se music_pages.py oferece suporte à categoria músicas.'
+    )
+
+html = entry.read_text(encoding='utf-8')
+# composer_pages.py is from the legacy hymn template and may hardcode hinos/acervo.
+# Musical group index pages are generated by build_music from _index.md.
+if category != 'musicas':
+    html = build_composers(ROOT, OUT, BASE, catalog, page) or html
+
+marker = '<div class="list-search"'
+if marker not in html:
+    marker = '<div class="prose">'
+html = html.replace(marker, banner(ROOT, BASE) + marker, 1)
+entry.write_text(html, encoding='utf-8')
+(OUT / 'index.html').write_text(html, encoding='utf-8')
+(OUT / '404.html').write_text(
+    page('Página não encontrada',
+         f'<section class="category-page"><h1>Partitura não encontrada.</h1>'
+         f'<a class="button" href="{BASE}/">Voltar ao acervo</a></section>'),
+    encoding='utf-8'
+)
+shutil.copyfile(ROOT / 'CNAME', OUT / 'CNAME')
+(OUT / '.nojekyll').touch()
+seo = json.loads((ROOT / 'seo.json').read_text(encoding='utf-8'))
+finish_seo(OUT, BASE, seo, aliases={route: '', 'musica': 'partituras'})
+finish_build(OUT, BASE)
+# Copie depois do pós-processamento; o GitHub Pages publica somente dist/.
+for origem in ARQUIVOS_CATALOGO:
+    destino = OUT / origem.name
+    shutil.copyfile(origem, destino)
+    print(f'Incluído no site: {destino}')
+print(f'{len(catalog.scores)} partituras validadas; site em {OUT}')
