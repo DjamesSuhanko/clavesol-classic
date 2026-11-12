@@ -1,8 +1,10 @@
 {
   "groups": {
-    "bach": "Bach"
+    "bach": "Bach",
+    "mozart": "Mozart"
   },
   "scores": {
-    "musicas/bach/bardinerie": "bach"
+    "musicas/bach/bardinerie": "bach",
+    "musicas/mozart/mozart-andatino": "mozart"
   }
 }
