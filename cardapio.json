@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    {
+      "id": "9321c909a1d822ac6184",
+      "title": "Clássicos",
+      "icon": "folder",
+      "order": 0,
+      "parentId": null,
+      "count": 2
+    }
+  ],
+  "scores": [
+    {
+      "id": "6dd9d238c6c00f1ff6fa175a",
+      "title": "Bardinerie",
+      "composer": "J. S. Bach",
+      "filename": "score.musicxml",
+      "musicxmlUrl": "https://classicos.clavesol.com.br/assets/music/musicas/bach/bardinerie/score.musicxml",
+      "sha256": "addcbd7e8524cb479666d426fb4184775762a2cf440d0c4487b279974bd2380b",
+      "bytes": 87813,
+      "categoryIds": [
+        "9321c909a1d822ac6184"
+      ]
+    },
+    {
+      "id": "82b84c88466a4ac17f95a24d",
+      "title": "Untitled score",
+      "composer": "Composer / arranger",
+      "filename": "score.musicxml",
+      "musicxmlUrl": "https://classicos.clavesol.com.br/assets/music/musicas/mozart/mozart-andatino/score.musicxml",
+      "sha256": "eb165a6ec2168f33e758798960bce2fc6bc08f8ab84fcfb19205359b58ca4bab",
+      "bytes": 63484,
+      "categoryIds": [
+        "9321c909a1d822ac6184"
+      ]
+    }
+  ]
+}
