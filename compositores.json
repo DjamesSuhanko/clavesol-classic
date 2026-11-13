@@ -1,10 +1,12 @@
 {
   "groups": {
     "bach": "Bach",
-    "mozart": "Mozart"
+    "mozart": "Mozart",
+    "vitoriomonti": "VitorioMonti"
   },
   "scores": {
     "musicas/bach/bardinerie": "bach",
-    "musicas/mozart/mozart-andatino": "mozart"
+    "musicas/mozart/mozart-andatino": "mozart",
+    "musicas/vitoriomonti/czardas": "vitoriomonti"
   }
 }

@@ -7,7 +7,7 @@
       "icon": "folder",
       "order": 0,
       "parentId": null,
-      "count": 2
+      "count": 3
     }
   ],
   "scores": [
@@ -19,6 +19,18 @@
       "musicxmlUrl": "https://classicos.clavesol.com.br/assets/music/musicas/bach/bardinerie/score.musicxml",
       "sha256": "addcbd7e8524cb479666d426fb4184775762a2cf440d0c4487b279974bd2380b",
       "bytes": 87813,
+      "categoryIds": [
+        "9321c909a1d822ac6184"
+      ]
+    },
+    {
+      "id": "687703048a109cb0d5623255",
+      "title": "czardas",
+      "composer": "",
+      "filename": "score.musicxml",
+      "musicxmlUrl": "https://classicos.clavesol.com.br/assets/music/musicas/vitoriomonti/czardas/score.musicxml",
+      "sha256": "bc7fc9e86d770c41567d5ea5caa9908fca7653b513ae21bed48dc83cd10d5f26",
+      "bytes": 522992,
       "categoryIds": [
         "9321c909a1d822ac6184"
       ]
